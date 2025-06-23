@@ -43,6 +43,10 @@
 <h2 id="chapterTitle"></h2>
 <pre id="chapterContent">Đang tải...</pre>
 
+<div id="controls">
+  <button onclick="prevChapter()">← Chương trước</button>
+  <button onclick="nextChapter()">Chương tiếp →</button>
+</div>
 <?php
 $dir = "translated/";
 $files = scandir($dir);
