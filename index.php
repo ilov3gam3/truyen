@@ -13,13 +13,14 @@
       background: #fefefe;
       color: #333;
     }
-    #controls {
-      margin-bottom: 20px;
+    #controls, #bottomControls {
+      margin: 20px 0;
+      text-align: center;
     }
     select, button {
       font-size: 16px;
       padding: 6px 12px;
-      margin-right: 10px;
+      margin: 5px;
     }
     pre {
       white-space: pre-wrap;
@@ -27,6 +28,14 @@
       padding: 20px;
       border-radius: 5px;
       overflow-x: auto;
+    }
+    #backToTop {
+      display: inline-block;
+      margin-top: 10px;
+      font-size: 14px;
+      color: #007bff;
+      cursor: pointer;
+      text-decoration: underline;
     }
   </style>
 </head>
@@ -43,14 +52,16 @@
 <h2 id="chapterTitle"></h2>
 <pre id="chapterContent">Đang tải...</pre>
 
-<div id="controls">
+<div id="bottomControls">
   <button onclick="prevChapter()">← Chương trước</button>
   <button onclick="nextChapter()">Chương tiếp →</button>
+  <select id="chapterSelectBottom" onchange="selectChapter(this.value)"></select>
+  <div id="backToTop" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">⬆ Quay lại đầu trang</div>
 </div>
+
 <?php
 $dir = "translated/";
 $files = scandir($dir);
-
 $chapters = [];
 
 foreach ($files as $file) {
@@ -59,7 +70,6 @@ foreach ($files as $file) {
         $chapters[$num] = $dir . $file;
     }
 }
-
 ksort($chapters);
 ?>
 
@@ -71,18 +81,20 @@ ksort($chapters);
   const chapterTitle = document.getElementById('chapterTitle');
   const chapterContent = document.getElementById('chapterContent');
   const chapterSelect = document.getElementById('chapterSelect');
+  const chapterSelectBottom = document.getElementById('chapterSelectBottom');
 
-  // Populate dropdown
-  chapterNumbers.forEach((chNum, idx) => {
-    const option = document.createElement('option');
-    option.value = idx;
-    option.textContent = 'Chương ' + chNum;
-    chapterSelect.appendChild(option);
-  });
+  // Populate both dropdowns
+  function populateDropdowns() {
+    chapterNumbers.forEach((chNum, idx) => {
+      const opt1 = new Option('Chương ' + chNum, idx);
+      const opt2 = new Option('Chương ' + chNum, idx);
+      chapterSelect.appendChild(opt1);
+      chapterSelectBottom.appendChild(opt2);
+    });
+  }
 
   function loadChapter(index) {
     if (index < 0 || index >= chapters.length) return;
-
     fetch(chapters[index])
       .then(res => {
         if (!res.ok) throw new Error("Không thể tải chương");
@@ -93,6 +105,9 @@ ksort($chapters);
         chapterTitle.textContent = chapterSelect.options[index].text;
         chapterContent.textContent = text;
         chapterSelect.value = index;
+        chapterSelectBottom.value = index;
+        document.cookie = `lastChapter=${index}; path=/; max-age=31536000`;
+        window.scrollTo(0, 0);
       })
       .catch(err => {
         chapterTitle.textContent = '';
@@ -108,12 +123,30 @@ ksort($chapters);
     if (currentIndex < chapters.length - 1) loadChapter(currentIndex + 1);
   }
 
-  function selectChapter() {
-    const selected = parseInt(chapterSelect.value, 10);
+  function selectChapter(value) {
+    const selected = parseInt(value ?? chapterSelect.value, 10);
     loadChapter(selected);
   }
 
-  window.onload = () => loadChapter(0);
+  function getCookie(name) {
+    const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+    return match ? match[2] : null;
+  }
+
+  function initKeyboardShortcuts() {
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'ArrowLeft') prevChapter();
+      if (e.key === 'ArrowRight') nextChapter();
+    });
+  }
+
+  // INIT
+  window.onload = () => {
+    populateDropdowns();
+    initKeyboardShortcuts();
+    const saved = getCookie('lastChapter');
+    loadChapter(saved ? parseInt(saved, 10) : 0);
+  };
 </script>
 
 </body>
